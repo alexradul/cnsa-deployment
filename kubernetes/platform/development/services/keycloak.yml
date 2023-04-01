@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: polar-keycloak
+  labels:
+    db: polar-keycloak
+spec:
+  selector:
+    matchLabels:
+      db: polar-keycloak
+  template:
+    metadata:
+      labels:
+        db: polar-keycloak
+    spec:
+      containers:
+        - name: polar-keycloak
+          image: quay.io/keycloak/keycloak:19.0
+          args:
+            - "start-dev"
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KEYCLOAK_ADMIN
+              value: user
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: password
+            - name: JAVA_OPTS_APPEND
+              value: "-Dkeycloak.import=/opt/keycloak/data/import/realm-config.json"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 350Mi
+            limits:
+              cpu: 500m
+              memory: 750Mi
+          volumeMounts:
+            - mountPath: /opt/keycloak/data/import
+              name: keycloak-config-volume
+      volumes:
+        - name: keycloak-config-volume
+          configMap:
+            name: polar-keycloak-config
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: polar-keycloak
+  labels:
+    db: polar-keycloak
+spec:
+  type: ClusterIP
+  selector:
+    db: polar-keycloak
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080

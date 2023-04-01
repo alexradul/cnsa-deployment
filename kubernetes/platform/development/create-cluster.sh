@@ -53,5 +53,12 @@ kubectl wait \
   --selector=db=polar-rabbitmq \
   --timeout=180s
 
+echo "\n⌛ Waiting for Keycloak to be ready..."
+
+kubectl wait \
+  --for=condition=ready pod \
+  --selector=db=polar-keycloak \
+  --timeout=180s
+
 
 echo "\n⛵ Happy Sailing!\n"
