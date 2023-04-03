@@ -27,6 +27,12 @@ spec:
               value: password
             - name: JAVA_OPTS_APPEND
               value: "-Dkeycloak.import=/opt/keycloak/data/import/realm-config.json"
+          readinessProbe:
+            httpGet:
+              path: /realms/master
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
           resources:
             requests:
               cpu: 100m
@@ -56,5 +62,26 @@ spec:
     db: polar-keycloak
   ports:
   - protocol: TCP
-    port: 8080
+    port: 80
     targetPort: 8080
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak-ingress
+  labels:
+    app: polar-keycloak
+spec:
+  rules:
+    - host: polar-keycloak
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: polar-keycloak
+                port:
+                  number: 80
