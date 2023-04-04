@@ -16,9 +16,11 @@ services:
       - SPRING_DATASOURCE_USERNAME=user
       - SPRING_DATASOURCE_PASSWORD=password
       - CATALOG-SERVICE_SETUPTESTDATA=true
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER-URI=http://polar-keycloak:8080/realms/PolarBookshop
   order-service:
     depends_on:
       - polar-postgres
+      - polar-rabbitmq
     image: "order-service"
     container_name: "order-service"
     ports:
@@ -28,6 +30,41 @@ services:
       - SPRING_R2DBC_URL=r2dbc:postgresql://polar-postgres:5432/polardb_order
       - SPRING_FLYWAY_URL=jdbc:postgresql://polar-postgres:5432/polardb_order
       - ORDER_POLAR_CATALOG-SERVICE-URI=http://catalog-service:9001
+      - SPRING_RABBITMQ_HOST=polar-rabbitmq
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER-URI=http://polar-keycloak:8080/realms/PolarBookshop
+  dispatcher-service:
+    depends_on:
+      - polar-rabbitmq
+    image: "dispatcher-service"
+    container_name: "dispatcher-service"
+    ports:
+      - 9003:9003
+      - 8003:8003
+    environment:
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8003
+      - SPRING_RABBITMQ_HOST=polar-rabbitmq
+
+  edge-service:
+    depends_on:
+      - polar-keycloak
+      - polar-redis
+      - polar-ui
+    image: "edge-service"
+    container_name: "edge-service"
+    ports:
+      - 9000:9000
+      - 8000:8000
+    environment:
+      # Buildpacks environment variable to enable debug through a socket on port 8000
+      - BPL_DEBUG_ENABLED=true
+      - BPL_DEBUG_PORT=8000
+      - CATALOG_SERVICE_URL=http://catalog-service:9001
+      - ORDER_SERVICE_URL=http://order-service:9002
+      - SPA_URL=http://polar-ui:9004
+      - SPRING_REDIS_HOST=polar-redis
+      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI=http://host.docker.internal:8080/realms/PolarBookshop
+
   polar-postgres:
     image: "postgres:14.4"
     container_name: "polar-postgres"
