@@ -139,6 +139,7 @@ services:
     depends_on:
       - loki
       - prometheus
+      - tempo
     ports:
       - "3000:3000"
     environment:
@@ -148,6 +149,7 @@ services:
       - ./observability/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
       - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards
       - ./observability/grafana/grafana.ini:/etc/grafana/grafana.ini
+
   loki:
     image: grafana/loki:2.6.1
     container_name: loki
@@ -155,6 +157,7 @@ services:
       - fluent-bit
     ports:
       - "3100:3100"
+
   fluent-bit:
     image: grafana/fluent-bit-plugin-loki:2.6.1-amd64
     container_name: fluent-bit
@@ -172,3 +175,12 @@ services:
       - "9090:9090"
     volumes:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  tempo:
+    image: grafana/tempo:1.5.0
+    container_name: tempo
+    command: -config.file /etc/tempo-config.yml
+    ports:
+      - "4317:4317"
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo-config.yml
