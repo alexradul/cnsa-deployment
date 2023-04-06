@@ -5,6 +5,7 @@ services:
       - polar-keycloak
       - polar-postgres
       - fluent-bit
+      - tempo
     image: catalog-service
     container_name: catalog-service
     ports:
@@ -19,6 +20,10 @@ services:
       - SPRING_DATASOURCE_PASSWORD=password
       - CATALOG-SERVICE_SETUPTESTDATA=true
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER-URI=http://polar-keycloak:8080/realms/PolarBookshop
+      - JAVA_TOOL_OPTIONS=-javaagent:/workspace/BOOT-INF/lib/opentelemetry-javaagent-1.17.0.jar
+      - OTEL_SERVICE_NAME=catalog-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_METRICS_EXPORTER=none
     logging:
       driver: fluentd
       options:
@@ -30,6 +35,7 @@ services:
       - polar-rabbitmq
       - polar-keycloak
       - fluent-bit
+      - tempo
     image: order-service
     container_name: order-service
     ports:
@@ -40,6 +46,10 @@ services:
       - ORDER_POLAR_CATALOG-SERVICE-URI=http://catalog-service:9001
       - SPRING_RABBITMQ_HOST=polar-rabbitmq
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER-URI=http://polar-keycloak:8080/realms/PolarBookshop
+      - JAVA_TOOL_OPTIONS=-javaagent:/workspace/BOOT-INF/lib/opentelemetry-javaagent-1.17.0.jar
+      - OTEL_SERVICE_NAME=order-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_METRICS_EXPORTER=none
     logging:
       driver: fluentd
       options:
@@ -49,6 +59,7 @@ services:
     depends_on:
       - polar-rabbitmq
       - fluent-bit
+      - tempo
     image: "dispatcher-service"
     container_name: "dispatcher-service"
     ports:
@@ -58,6 +69,10 @@ services:
       - BPL_DEBUG_ENABLED=true
       - BPL_DEBUG_PORT=8003
       - SPRING_RABBITMQ_HOST=polar-rabbitmq
+      - JAVA_TOOL_OPTIONS=-javaagent:/workspace/BOOT-INF/lib/opentelemetry-javaagent-1.17.0.jar
+      - OTEL_SERVICE_NAME=dispatcher-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_METRICS_EXPORTER=none
     logging:
       driver: fluentd
       options:
@@ -69,6 +84,7 @@ services:
       - polar-redis
       - polar-ui
       - fluent-bit
+      - tempo
     image: "edge-service"
     container_name: "edge-service"
     ports:
@@ -83,6 +99,10 @@ services:
       - SPA_URL=http://polar-ui:9004
       - SPRING_REDIS_HOST=polar-redis
       - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI=http://host.docker.internal:8080/realms/PolarBookshop
+      - JAVA_TOOL_OPTIONS=-javaagent:/workspace/BOOT-INF/lib/opentelemetry-javaagent-1.17.0.jar
+      - OTEL_SERVICE_NAME=edge-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4317
+      - OTEL_METRICS_EXPORTER=none
     logging:
       driver: fluentd
       options:
@@ -99,11 +119,13 @@ services:
       - POSTGRES_PASSWORD=password
     volumes:
       - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
   polar-redis:
     image: "redis:7.0"
     container_name: "polar-redis"
     ports:
       - 6379:6379
+
   polar-rabbitmq:
     image: rabbitmq:3.10-management
     container_name: polar-rabbitmq
@@ -112,6 +134,7 @@ services:
     - 15672:15672
     volumes:
     - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+
   polar-keycloak:
     image: quay.io/keycloak/keycloak:19.0
     container_name: "polar-keycloak"
@@ -123,6 +146,7 @@ services:
       - KEYCLOAK_ADMIN_PASSWORD=password
     ports:
       - 8080:8080
+
   polar-ui:
     image: "ghcr.io/polarbookshop/polar-ui:v1"
     container_name: "polar-ui"
